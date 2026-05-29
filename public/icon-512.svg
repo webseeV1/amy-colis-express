@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <rect width='512' height='512' rx='102.4' fill='#1A365D'/>
+  <rect x='61.44' y='61.44' width='389.12' height='389.12' rx='61.44' fill='#2563EB'/>
+  <!-- Plane icon -->
+  <text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-size='215.04' fill='white'>✈</text>
+  <!-- Orange bottom strip -->
+  <rect x='61.44' y='368.64' width='389.12' height='81.92' rx='20.48' fill='#ED8936'/>
+  <text x='50%' y='430.08' dominant-baseline='middle' text-anchor='middle' font-size='51.2' fill='white' font-weight='bold' font-family='Arial'>ACE</text>
+</svg>

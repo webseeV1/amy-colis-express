@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  employe_abidjan
+  employe_france
+}
+
+enum StatutColis {
+  en_stock
+  en_voyage
+  receptionne
+  notifie
+  paye
+  prepaye
+  attente_montant
+  impaye
+}
+
+enum StatutVoyage {
+  preparation
+  envoye
+  receptionne
+}
+
+enum TypeFinance {
+  entree
+  depense
+  entree_diverse
+}
+
+enum ModePayment {
+  especes
+  virement
+}
+
+enum TypeAction {
+  creation
+  modification
+  suppression
+  paiement
+  reception
+  notification
+  connexion
+  deconnexion
+  depense
+  entree
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  telephone String?
+  pinHash   String
+  role      Role
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  colisEnregistres  Colis[]   @relation("EnregistrePar")
+  colisReceptionnes Colis[]   @relation("ReceptionnePar")
+  colisPaies        Colis[]   @relation("PayePar")
+  finances          Finance[]
+  auditLogs         AuditLog[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  nom       String
+  prenom    String
+  telephone String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  colis Colis[]
+}
+
+model Voyage {
+  id              String       @id @default(cuid())
+  numero          Int          @unique @default(autoincrement())
+  dateVoyage      DateTime
+  statut          StatutVoyage @default(preparation)
+  nbColisAttendus Int          @default(0)
+  nbColisRecus    Int          @default(0)
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  colis    Colis[]
+  finances Finance[]
+}
+
+model Colis {
+  id                 String      @id @default(cuid())
+  clientId           String
+  expediteurTel      String
+  poids              Float
+  description        String
+  montant            Float
+  statut             StatutColis @default(en_stock)
+  estPrepaye         Boolean     @default(false)
+  photoUrl           String?
+  photoExpiresAt     DateTime?
+  modePayment        ModePayment?
+  voyageId           String?
+  enregistreParId    String
+  receptionneParId   String?
+  payeParId          String?
+  dateEnregistrement DateTime    @default(now())
+  dateReception      DateTime?
+  datePaiement       DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  client         Client  @relation(fields: [clientId], references: [id])
+  voyage         Voyage? @relation(fields: [voyageId], references: [id])
+  enregistrePar  User    @relation("EnregistrePar", fields: [enregistreParId], references: [id])
+  receptionnePar User?   @relation("ReceptionnePar", fields: [receptionneParId], references: [id])
+  payePar        User?   @relation("PayePar", fields: [payeParId], references: [id])
+}
+
+model Finance {
+  id          String       @id @default(cuid())
+  type        TypeFinance
+  motif       String
+  montant     Float
+  modePayment ModePayment?
+  voyageId    String?
+  userId      String
+  colisId     String?
+  date        DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  voyage Voyage? @relation(fields: [voyageId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id         String     @id @default(cuid())
+  userId     String
+  action     TypeAction
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Parametres {
+  id                     String   @id @default("singleton")
+  adresseRecuperation    String   @default("158 rue de Saussure, 75017 Paris, 1er étage, porte n°34")
+  lienGoogleMaps         String   @default("https://maps.app.goo.gl/5UmRv3wd9SN6S3bQ6?g_st=ic")
+  telephoneEntreprise    String   @default("")
+  prixParKg              Float    @default(8.0)
+  messageWhatsapp        String   @default("Bonjour {nom}, votre colis est arrivé ! Montant à régler : {montant}€. Adresse : {adresse}. {maps_link}")
+  messageRelance         String   @default("Bonjour {nom}, votre colis vous attend toujours. Montant : {montant}€")
+  livraisonTexte         String   @default("Livraison à domicile en Île-de-France disponible pour 20€")
+  livraisonPrix          Float    @default(20.0)
+  geminiApiKey           String   @default("")
+  dureeConservationPhoto Int      @default(14)
+  updatedAt              DateTime @updatedAt
+}
