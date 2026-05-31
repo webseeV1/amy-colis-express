@@ -5,6 +5,8 @@ import { formatMontant } from '@/lib/utils'
 import { Camera, CheckCircle, Loader2, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
+import ColisSearchBox from '../../components/ColisSearchBox'
+import { colisMatchesQuery } from '@/lib/search'
 
 interface ColisItem {
   id: string
@@ -34,6 +36,7 @@ function ReceptionContent() {
   const [confirmes, setConfirmes] = useState<string[]>([])
   const [loadingVoyage, setLoadingVoyage] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -105,6 +108,21 @@ function ReceptionContent() {
     }
   }
 
+  // Recherche intelligente : filtre la liste affichée + suggestions du menu déroulant
+  const colisFiltres = voyage
+    ? voyage.colis.filter(c => colisMatchesQuery(search, c.client))
+    : []
+  const suggestions = colisFiltres.slice(0, 8).map(c => {
+    const m = multiInfo.get(c.id) || { x: 1, y: 1 }
+    return {
+      id: c.id,
+      nom: `${c.client.nom} ${c.client.prenom}`,
+      telephone: c.client.telephone,
+      montant: c.montant,
+      extra: m.y > 1 ? `Colis ${m.x}/${m.y}` : undefined,
+    }
+  })
+
   return (
     <div className="space-y-4">
       <div>
@@ -119,7 +137,7 @@ function ReceptionContent() {
         </label>
         <select
           value={selectedVoyageId}
-          onChange={e => { setSelectedVoyageId(e.target.value); setConfirmes([]); setPhotos({}) }}
+          onChange={e => { setSelectedVoyageId(e.target.value); setConfirmes([]); setPhotos({}); setSearch('') }}
           className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">— Choisir un voyage —</option>
@@ -159,9 +177,29 @@ function ReceptionContent() {
             />
           </div>
 
+          {/* Recherche intelligente */}
+          {voyage.colis.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
+              <ColisSearchBox
+                query={search}
+                setQuery={setSearch}
+                suggestions={suggestions}
+                onSelect={s => setSearch(s.nom)}
+                placeholder="Rechercher un colis (nom ou téléphone)…"
+                resultCount={colisFiltres.length}
+              />
+            </div>
+          )}
+
           {/* Colis list */}
           <div className="space-y-3">
-            {voyage.colis.map((c, i) => {
+            {search.trim().length > 0 && colisFiltres.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm">
+                Aucun colis ne correspond à « {search} »
+              </div>
+            )}
+            {colisFiltres.map((c) => {
+              const i = voyage.colis.indexOf(c)
               const isConfirme = confirmes.includes(c.id)
               const hasPhoto = !!photos[c.id]
               const m = multiInfo.get(c.id) || { x: 1, y: 1 }
